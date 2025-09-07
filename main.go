@@ -27,8 +27,9 @@ func main() {
 
 	router.GET("/", handlers.HomeHandler)
 	router.GET("/version", handler.CheckVersionDataBase)
-	router.GET("/getUsers", handler.GetAllUsers)
-	router.GET("/getUser/:id", handler.GetUserById)
+	router.GET("/users", handler.GetAllUsers)
+	router.GET("/users/:id", handler.GetUserById)
+	router.POST("/users", handler.CreateUser)
 
 	http.ListenAndServe(":8080", router)
 }

@@ -78,3 +78,11 @@ func (p *Pool) GetVersion(ctx context.Context) (string, error) {
 	}
 	return version, nil
 }
+func (p *Pool) CreateNewUser(ctx context.Context, firstName, secondName, email string) (int, error) {
+	var id int
+	err := p.pool.QueryRow(ctx, "INSERT INTO users (first_name, second_name, email) VALUES ($1, $2, $3) RETURNING id", firstName, secondName, email).Scan(&id)
+	if err != nil {
+		return 0, fmt.Errorf("error with createNewUser %w", err)
+	}
+	return id, nil
+}
