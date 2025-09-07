@@ -1,40 +1,34 @@
 package main
 
 import (
-	"blog-api/internal/storage/postgres"
+	"blog-api/handlers"
+	"blog-api/storage"
 	"context"
-	"fmt"
 	"log"
-	"time"
+	"net/http"
+
+	"github.com/julienschmidt/httprouter"
 )
 
 func main() {
 	connString := "postgres://postgres:admin@localhost:5432/blog-api?sslmode=disable"
 
-	config := postgres.Config{
-		URL:             connString,
-		MaxConns:        20,
-		MinConns:        5,
-		MaxConnLifetime: time.Hour,
-		MaxConnIdleTime: time.Minute * 30,
-	}
-
-	pool, err := postgres.New(context.Background(), config)
+	//Создаем пул соединений
+	pool, err := storage.NewPool(context.Background(), connString)
 	if err != nil {
-		log.Fatalf("Unable to create new pool")
+		log.Fatalf("Error with pool connection")
 	}
 	defer pool.Close()
+	log.Println("Success")
+	log.Println("http://localhost:8080")
 
-	//Тестовый запрос версии
-	var version string
-	err = pool.QueryRow(context.Background(), "SELECT version();").Scan(&version)
-	if err != nil {
-		log.Fatalf("Query failed: %v", err)
-	}
+	handler := handlers.NewHandler(pool)
+	router := httprouter.New()
 
-	fmt.Println(version)
+	router.GET("/", handlers.HomeHandler)
+	router.GET("/version", handler.CheckVersionDataBase)
+	router.GET("/getUsers", handler.GetAllUsers)
+	router.GET("/getUser/:id", handler.GetUserById)
 
-	// Смотрим статистику пула (для наглядности)
-	stats := pool.Stat()
-	fmt.Printf("📈 Pool stats: TotalConns(%d) AcquiredConns(%d)\n", stats.TotalConns(), stats.AcquiredConns())
+	http.ListenAndServe(":8080", router)
 }
