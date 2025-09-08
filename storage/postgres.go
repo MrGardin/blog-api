@@ -86,3 +86,72 @@ func (p *Pool) CreateNewUser(ctx context.Context, firstName, secondName, email s
 	}
 	return id, nil
 }
+func (p *Pool) UpdateUser(ctx context.Context, id int, firstName, secondName, email string) (int, error) {
+	_, err := p.pool.Exec(ctx, "UPDATE users SET first_name = $1, second_name = $2, email = $3 WHERE id = $4", firstName, secondName, email, id)
+	if err != nil {
+		return 0, fmt.Errorf("error with update user %w", err)
+	}
+	return id, nil
+}
+func (p *Pool) DeleteUser(ctx context.Context, id int) error {
+	_, err := p.pool.Exec(ctx, "DELETE FROM users WHERE id = $1", id)
+	if err != nil {
+		return fmt.Errorf("error with delete user %w", err)
+	}
+	return nil
+}
+func (p *Pool) CreateNewPost(ctx context.Context, title, content string, userId int) (int, error) {
+	var id int
+	err := p.pool.QueryRow(ctx, "INSERT INTO posts (title, content, user_id) VALUES($1, $2, $3) RETURNING id", title, content, userId).Scan(&id)
+	if err != nil {
+		return 0, fmt.Errorf("error with create post %w", err)
+	}
+	return id, nil
+}
+
+// Получить все посты
+func (p *Pool) GetAllPosts(ctx context.Context) ([]Post, error) {
+	var posts []Post
+	rows, err := p.pool.Query(ctx, "SELECT id, title, content, user_id, created_at, updated_at FROM posts ORDER BY id")
+	if err != nil {
+		return nil, fmt.Errorf("error with get rows in GetAllPosts: %w", err)
+	}
+	var post Post
+	for rows.Next() {
+		err = rows.Scan(&post.ID, &post.Title, &post.Content, &post.UserID, &post.CreatedAt, &post.UpdatedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error with scan post: %w", err)
+		}
+		posts = append(posts, post)
+	}
+	return posts, nil
+}
+
+// Получить пост по id
+func (p *Pool) GetPostById(ctx context.Context, id int) (*Post, error) {
+	var post Post
+	err := p.pool.QueryRow(ctx, "SELECT id, title, content, user_id, created_at, updated_at FROM posts WHERE id = $1", id).Scan(&post.ID, &post.Title, &post.Content, &post.UserID, &post.CreatedAt, &post.UpdatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error with get post: %w", err)
+	}
+	return &post, nil
+}
+func (p *Pool) GetUsersPost(ctx context.Context, UserID int) ([]Post, error) {
+	var posts []Post
+	rows, err := p.pool.Query(ctx, "SELECT id, title, content, user_id, created_at, updated_at FROM posts WHERE user_id = $1 ORDER BY created_at DESC", UserID)
+	if err != nil {
+		return nil, fmt.Errorf("error with create rows in get UsersPost")
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var post Post
+		err := rows.Scan(&post.ID, &post.Title, &post.Content, &post.UserID,
+			&post.CreatedAt, &post.UpdatedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error scan")
+		}
+		posts = append(posts, post)
+	}
+	return posts, nil
+}

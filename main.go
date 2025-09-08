@@ -1,5 +1,7 @@
 package main
 
+//oCRUD API для блога: Пользователи, Посты, Комментарии. Эндпоинты для создания, получения, обновления, удаления.
+
 import (
 	"blog-api/handlers"
 	"blog-api/storage"
@@ -27,9 +29,18 @@ func main() {
 
 	router.GET("/", handlers.HomeHandler)
 	router.GET("/version", handler.CheckVersionDataBase)
+
+	//Роуты с пользователем
 	router.GET("/users", handler.GetAllUsers)
 	router.GET("/users/:id", handler.GetUserById)
 	router.POST("/users", handler.CreateUser)
+	router.PUT("/users/:id", handler.UpdateUser)
+	router.DELETE("/users/:id", handler.DeleteUser)
+	//Роуты с постами
+	router.POST("/posts", handler.CreatePost)
+	router.GET("/posts", handler.GetAllPosts)
+	router.GET("/posts/:id", handler.GetPostById)
+	router.GET("/users/:id/posts", handler.GetUsersPost) // Посты пользователя
 
 	http.ListenAndServe(":8080", router)
 }
